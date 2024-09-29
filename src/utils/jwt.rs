@@ -16,7 +16,7 @@ pub struct Claims{
 pub fn create()-> Result<String, StatusCode>{
     let mut now = Utc::now();
     let iat = now.timestamp() as usize;
-    let expires_in = Duration::from_secs(30);
+    let expires_in = Duration::from_secs(200000);
     now+=expires_in;
     let exp = now.timestamp() as usize;
     let claim = Claims{exp, iat};
@@ -31,7 +31,7 @@ pub fn is_valid(token:&str)-> Result<(), CustomError>{
     decode::<Claims>(token, &key, &Validation::new(Algorithm::HS256))
         .map_err(|error|  
             match error.kind(){
-                jsonwebtoken::errors::ErrorKind::ExpiredSignature => CustomError::new("token error", StatusCode::UNAUTHORIZED),
+                jsonwebtoken::errors::ErrorKind::ExpiredSignature => CustomError::new("token expired, please sign in again ", StatusCode::UNAUTHORIZED),
                 _ =>CustomError::new("server error", StatusCode::INTERNAL_SERVER_ERROR)
             }
         )?;

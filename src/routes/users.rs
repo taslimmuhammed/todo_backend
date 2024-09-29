@@ -2,12 +2,17 @@ use axum::{http::{HeaderMap, StatusCode}, Extension, Json};
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,IntoActiveModel, Set};
 use serde::{Deserialize, Serialize};
 
-use crate::{database::users, utils::jwt::create};
+use crate::{database::users, utils::{custom_error::CustomError, jwt::create}};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct RequestAccount{
     firstname: String,
     lastname: String,
+    email: String,
+    password: String 
+}
+#[derive(Deserialize, Debug, Clone)]
+pub struct LoginAccount{
     email: String,
     password: String 
 }
@@ -22,17 +27,18 @@ pub struct ResponseAccount{
 pub async fn create_account(
     Extension(database):Extension<DatabaseConnection>,
     Json(account):Json<RequestAccount>
-)->Result<Json<ResponseAccount>, StatusCode>{
+)->Result<Json<ResponseAccount>, CustomError>{
+    dbg!(account.clone());
     let new_user = users::ActiveModel{
         firstname: Set(account.firstname),
         lastname: Set(account.lastname),
         email: Set(account.email),
         password: Set(hash_password(account.password)?),
-        token: Set(Some(create()?)),
+        token: Set(Some(create().map_err(|_|CustomError::new("error creating token",StatusCode::INTERNAL_SERVER_ERROR))?)),
         ..Default::default()
     }.save(&database)
     .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    .map_err(|e| CustomError::new(e.to_string(),StatusCode::INTERNAL_SERVER_ERROR))?;
     Ok(
         Json(
             ResponseAccount { 
@@ -48,24 +54,24 @@ pub async fn create_account(
 
 pub async fn login_user(
     Extension(database):Extension<DatabaseConnection>,
-    Json(account):Json<RequestAccount>
-)->Result<Json<ResponseAccount>, StatusCode>{
+    Json(account):Json<LoginAccount>
+)->Result<Json<ResponseAccount>, CustomError>{
     let db_user = users::Entity::find()
         .filter(users::Column::Email.eq(account.email))
         .one(&database)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|_| CustomError::new("internal server error",StatusCode::INTERNAL_SERVER_ERROR))?;
     if let Some(db_user) = db_user{
         if !verify_password(account.password, &db_user.password)?{
-            return Err(StatusCode::UNAUTHORIZED);
+            return Err(CustomError::new("wrong password", StatusCode::UNAUTHORIZED));
         }
         println!("user found");
-        let new_token = create()?;
+        let new_token = create().map_err(|e| CustomError::new(e.as_str(), StatusCode::INTERNAL_SERVER_ERROR))?;
         let mut user = db_user.into_active_model();
         user.token = Set(Some(new_token));
         let saved_user = user.save(&database)
             .await
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+            .map_err(|e| CustomError::new("internal server error",StatusCode::INTERNAL_SERVER_ERROR))?;
         Ok(Json(ResponseAccount{
             id: saved_user.id.unwrap(),
             firstname: saved_user.firstname.unwrap(),
@@ -74,7 +80,7 @@ pub async fn login_user(
             token: saved_user.token.unwrap().unwrap()
         }))
     }else{
-        Err(StatusCode::NOT_FOUND)
+        Err(CustomError::new("Wrong username",StatusCode::NOT_FOUND))
     }
     
 
@@ -102,10 +108,10 @@ pub async fn logout(
     Ok(())
 }
 
-pub fn hash_password(password:String)->Result<String, StatusCode>{
-    bcrypt::hash(password, 10).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+pub fn hash_password(password:String)->Result<String, CustomError>{
+    bcrypt::hash(password, 10).map_err(|_| CustomError::new("error hashing",StatusCode::INTERNAL_SERVER_ERROR))
 }
 
-pub fn verify_password(password:String, hash:&str)-> Result<bool, StatusCode>{
-    bcrypt::verify(password, &hash).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+pub fn verify_password(password:String, hash:&str)-> Result<bool, CustomError>{
+    bcrypt::verify(password, &hash).map_err(|_| CustomError::new("wrong pass", StatusCode::INTERNAL_SERVER_ERROR))
 }

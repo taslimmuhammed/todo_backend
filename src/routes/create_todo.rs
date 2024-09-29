@@ -8,7 +8,6 @@ pub struct RequestTodo{
     name:String,
     description: Option<String>,
     category: Option<String>,
-    done: Option<bool>,
     date : Option<String>
 }
 pub async fn create_todo(
@@ -21,7 +20,7 @@ pub async fn create_todo(
         name:Set(request_todo.name),
         description:Set(request_todo.description),
         category:Set(request_todo.category),
-        done:Set(request_todo.done),
+        done:Set(Some(false)),
         date:Set(request_todo.date),
         ..Default::default() //for auto increment id
     };
