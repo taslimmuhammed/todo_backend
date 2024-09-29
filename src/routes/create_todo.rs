@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct RequestTodo{
-    user_id: Option<i32>,
+    name:String,
     description: Option<String>,
     category: Option<String>,
     done: Option<bool>,
@@ -17,7 +17,8 @@ pub async fn create_todo(
     Json(request_todo):Json<RequestTodo>,
 )-> Result<(), StatusCode>{
         let task = todos::ActiveModel{
-        user_id:Set(request_todo.user_id), // Some is only required for optional variables
+        user_id:Set(Some(user.id)), 
+        name:Set(request_todo.name),
         description:Set(request_todo.description),
         category:Set(request_todo.category),
         done:Set(request_todo.done),
