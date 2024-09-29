@@ -3,10 +3,10 @@ mod create_todo;
 // mod atomic_update;
 // mod partial_update;
 // mod delete;
-// mod users;
+mod users;
 mod guard;
 use guard::guard;
-// use users::{create_account, login_user, logout};
+use users::{create_account, login_user, logout};
 // use delete::{delete_task, soft_delete};
 use create_todo::create_todo;
 // use get_task::{get_one_task, get_all_task};
@@ -28,9 +28,9 @@ pub fn create_routes(database:DatabaseConnection)-> Router{
         // .route("/partial_update/:task_id",patch(partial_update))
         // .route("/delete/:task_id", delete(delete_task))
         // .route("/soft_delete/:task_id", delete(soft_delete))
-        // .route("/users/signup", post(create_account))
-        // .route("/users/login", post(login_user))
-        // .route("/users/logout", post(logout))
+        .route("/users/signup", post(create_account))
+        .route("/users/login", post(login_user))
+        .route("/users/logout", post(logout))
         // // .route("/test", post(test_func))
         .layer(Extension(database))
         .layer(cors);

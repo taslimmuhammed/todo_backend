@@ -6,13 +6,17 @@ use crate::{database::users, utils::jwt::create};
 
 #[derive(Deserialize)]
 pub struct RequestAccount{
-    username: String,
+    firstname: String,
+    lastname: String,
+    email: String,
     password: String 
 }
 #[derive(Serialize)]
 pub struct ResponseAccount{
     id:i32,
-    username: String,
+    email: String,
+    firstname: String,
+    lastname: String,
     token: String
 }
 pub async fn create_account(
@@ -20,7 +24,9 @@ pub async fn create_account(
     Json(account):Json<RequestAccount>
 )->Result<Json<ResponseAccount>, StatusCode>{
     let new_user = users::ActiveModel{
-        username: Set(account.username),
+        firstname: Set(account.firstname),
+        lastname: Set(account.lastname),
+        email: Set(account.email),
         password: Set(hash_password(account.password)?),
         token: Set(Some(create()?)),
         ..Default::default()
@@ -29,7 +35,13 @@ pub async fn create_account(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(
         Json(
-            ResponseAccount { id: new_user.id.unwrap(), username: new_user.username.unwrap(), token: new_user.token.unwrap().unwrap() }
+            ResponseAccount { 
+                id: new_user.id.unwrap(),
+                firstname: new_user.firstname.unwrap(),
+                lastname: new_user.lastname.unwrap(),
+                email: new_user.email.unwrap(),
+                token: new_user.token.unwrap().unwrap()
+            }
         )
     )
 }
@@ -39,7 +51,7 @@ pub async fn login_user(
     Json(account):Json<RequestAccount>
 )->Result<Json<ResponseAccount>, StatusCode>{
     let db_user = users::Entity::find()
-        .filter(users::Column::Username.eq(account.username))
+        .filter(users::Column::Email.eq(account.email))
         .one(&database)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -56,8 +68,10 @@ pub async fn login_user(
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
         Ok(Json(ResponseAccount{
             id: saved_user.id.unwrap(),
-            username: saved_user.username.unwrap(),
-            token: saved_user.token.unwrap().unwrap(),
+            firstname: saved_user.firstname.unwrap(),
+            lastname: saved_user.lastname.unwrap(),
+            email: saved_user.email.unwrap(),
+            token: saved_user.token.unwrap().unwrap()
         }))
     }else{
         Err(StatusCode::NOT_FOUND)
