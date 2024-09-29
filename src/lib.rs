@@ -10,7 +10,7 @@ pub async fn run(database_uri:String){
             std::process::exit(1);
         }
     };
-    println!("Starting Server at localhost:3000");
+    println!("Starting Server at localhost:5000");
     let app = routes::create_routes(database);
     let listener = tokio::net::TcpListener::bind("0.0.0.0:5000").await.unwrap();
     axum::serve(listener, app).await.unwrap();

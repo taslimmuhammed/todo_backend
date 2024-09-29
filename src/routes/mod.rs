@@ -9,7 +9,7 @@ use guard::guard;
 use users::{create_account, login_user, logout};
 // use delete::{delete_task, soft_delete};
 use create_todo::create_todo;
-use get_todo::{ get_all_todo};
+use get_todo::get_all_todo;
 // use atomic_update::atomic_update;
 // use partial_update::partial_update;
 use sea_orm::DatabaseConnection;
