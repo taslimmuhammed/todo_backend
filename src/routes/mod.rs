@@ -2,12 +2,12 @@ mod create_todo;
 mod get_todo;
 mod atomic_update;
 // mod partial_update;
-// mod delete;
+mod delete;
 mod users;
 mod guard;
 use guard::guard;
 use users::{create_account, login_user, logout};
-// use delete::{delete_task, soft_delete};
+use delete::{delete_task};
 use create_todo::create_todo;
 use get_todo::get_all_todo;
 use atomic_update::atomic_update;
@@ -32,7 +32,7 @@ pub fn create_routes(database:DatabaseConnection)-> Router{
         // .route("/get_one_task/:id", get(get_one_task))
         
         // .route("/partial_update/:task_id",patch(partial_update))
-        // .route("/delete/:task_id", delete(delete_task))
+        .route("/delete/:task_id", delete(delete_task))
         // .route("/soft_delete/:task_id", delete(soft_delete))
         .route("/auth/signup", post(create_account))
         .route("/auth/login", post(login_user))
